@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postechno Solutions – Barcode & RFID Automation, Odisha</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --org:     #ff6b3d;
+    --org-l:   #ff8a65;
+    --org-d:   #e55527;
+    --wht:     #ffffff;
+    --off:     #f4f7fc;
+    --card-glass: rgba(255,255,255,0.72);
+    --shadow:  0 8px 32px rgba(255,107,61,0.10);
+    --bg:      #ffffff;
+    --bg2:     #f4f7fc;
+    --bg3:     #fef0eb;
+    --glass:   rgba(255,107,61,0.04);
+    --glass-border: rgba(255,107,61,0.15);
+    --text:    #ff6b3d;
+    --text-dim:#ff8a65;
+    --blue:    #1a6ae8;
+    --blue-glow: rgba(26,110,232,0.25);
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:transparent;color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+
+  #barcode-bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    pointer-events: none;
+    background: #ffffff;
+  }
+
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:#ffffff}
+  ::-webkit-scrollbar-thumb{background:var(--org);border-radius:2px}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;width:100%;z-index:1000;padding:18px 6%;display:flex;align-items:center;justify-content:space-between;
+    background:rgba(255,255,255,0.90);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,107,61,0.18);transition:.3s}
+  .logo{display:flex;align-items:center}
+  .logo-img{height:46px;width:auto;display:block;transition:.3s}
+  .logo-img:hover{transform:scale(1.03)}
+  .nav-links{display:flex;gap:36px;list-style:none}
+  .nav-links a{color:var(--text-dim);text-decoration:none;font-size:.88rem;letter-spacing:.8px;text-transform:uppercase;font-weight:500;transition:.2s;position:relative}
+  .nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:var(--org);transition:.3s}
+  .nav-links a:hover{color:var(--org)}
+  .nav-links a:hover::after{width:100%}
+  .nav-cta{background:linear-gradient(135deg,var(--org),var(--org-d));color:var(--wht);border:none;padding:10px 24px;border-radius:4px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1.5px;font-size:.9rem;text-transform:uppercase;cursor:pointer;transition:.25s}
+  .nav-cta:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(255,107,61,.45)}
+
+  /* HERO */
+  #hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+  #canvas3d{position:absolute;inset:0;z-index:0}
+  .hero-overlay{position:absolute;inset:0;
+    background:radial-gradient(ellipse at 65% 50%,rgba(255,107,61,0.06) 0%,transparent 65%),
+               radial-gradient(ellipse at 15% 80%,rgba(229,85,39,0.08) 0%,transparent 55%);z-index:1}
+  .hero-content{position:relative;z-index:2;padding:0 6%;max-width:700px}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:10px;background:rgba(255,107,61,0.12);border:1px solid rgba(255,107,61,0.35);
+    padding:6px 16px;border-radius:50px;font-size:.75rem;letter-spacing:2px;text-transform:uppercase;color:var(--org);margin-bottom:28px}
+  .hero-eyebrow::before{content:'';width:6px;height:6px;background:var(--org);border-radius:50%;animation:pulse 2s ease infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+  h1{font-family:'Rajdhani',sans-serif;font-size:clamp(2.8rem,5.5vw,5rem);font-weight:700;line-height:1.05;letter-spacing:-1px;margin-bottom:24px;color:#ff6b3d}
+  h1 em{font-style:normal;color:#ff6b3d}
+  .hero-sub{font-size:1.05rem;color:var(--text-dim);line-height:1.75;max-width:520px;margin-bottom:40px}
+  .hero-btns{display:flex;gap:16px;flex-wrap:wrap}
+  .btn-primary{background:linear-gradient(135deg,var(--org),var(--org-d));color:var(--wht);border:none;padding:14px 32px;border-radius:4px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1.5px;font-size:1rem;text-transform:uppercase;cursor:pointer;transition:.25s}
+  .btn-primary:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(255,107,61,.50)}
+  .btn-outline{background:transparent;color:var(--blue);border:1px solid rgba(26,110,232,0.55);padding:14px 32px;border-radius:4px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:1.5px;font-size:1rem;text-transform:uppercase;cursor:pointer;transition:.25s}
+  .btn-outline:hover{border-color:var(--blue);color:var(--blue);box-shadow:0 0 24px var(--blue-glow)}
+  .hero-stats{display:flex;gap:40px;margin-top:60px;padding-top:40px;border-top:1px solid rgba(255,107,61,0.15)}
+  .stat-val{font-family:'Rajdhani',sans-serif;font-size:2.2rem;font-weight:700;color:var(--blue)}
+  .stat-val span{color:var(--org)}
+  .stat-lbl{font-size:.75rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-top:4px}
+
+  /* HUB 3D */
+  #hub-canvas{position:absolute;right:5%;top:50%;transform:translateY(-50%);width:500px;height:500px;z-index:2;pointer-events:none}
+
+  /* SECTIONS */
+  section{padding:100px 6%}
+  .section-label{font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--blue);margin-bottom:12px;font-weight:600}
+  .section-title{font-family:'Rajdhani',sans-serif;font-size:clamp(2rem,3.5vw,3rem);font-weight:700;line-height:1.1;margin-bottom:16px;color:var(--text)}
+  .section-sub{color:var(--text-dim);font-size:.95rem;line-height:1.75;max-width:540px}
+
+  /* TICKER */
+  #ticker{background:linear-gradient(90deg,rgba(255,107,61,.10),rgba(229,85,39,.08));
+    border-top:1px solid rgba(255,107,61,0.15);border-bottom:1px solid rgba(255,107,61,0.15);padding:16px 0;overflow:hidden}
+  .ticker-track{display:flex;white-space:nowrap;animation:ticker 30s linear infinite}
+  @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .ticker-item{display:inline-flex;align-items:center;gap:12px;padding:0 48px;font-size:.85rem;letter-spacing:1px;text-transform:uppercase;font-weight:500;color:var(--text-dim)}
+  .ticker-item::before{content:'✦';color:var(--org);font-size:.7rem}
+
+  /* FLIP CARDS */
+  .flip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-top:64px}
+  .flip-card{height:280px;perspective:1200px;cursor:pointer}
+  .flip-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,0,.2,1)}
+  .flip-card:hover .flip-inner{transform:rotateY(180deg)}
+  .flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;padding:36px;
+    background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);
+    box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between}
+  .flip-face.back{transform:rotateY(180deg);background:rgba(254,240,235,0.98);border-color:rgba(255,107,61,.30)}
+  .flip-face::before{content:'';position:absolute;inset:0;border-radius:12px;
+    background:linear-gradient(135deg,rgba(255,107,61,.06) 0%,rgba(229,85,39,.04) 100%);pointer-events:none}
+  .card-icon{font-size:2.4rem;margin-bottom:12px}
+  .card-cat{font-size:.68rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--org);font-weight:600;margin-bottom:8px}
+  .card-title{font-family:'Rajdhani',sans-serif;font-size:1.55rem;font-weight:700;line-height:1.2;color:var(--text)}
+  .card-hint{font-size:.78rem;color:var(--text-dim);letter-spacing:.5px;margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,107,61,.12)}
+  .back-title{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:18px}
+  .brand-tags{display:flex;flex-wrap:wrap;gap:8px}
+  .brand-tag{background:rgba(255,107,61,.08);border:1px solid rgba(255,107,61,.25);color:var(--text);padding:5px 12px;border-radius:4px;font-size:.78rem;letter-spacing:.8px;font-weight:500}
+  .back-desc{font-size:.85rem;color:var(--text-dim);line-height:1.7;margin-bottom:16px}
+
+  /* SOLUTIONS */
+  #solutions{background:rgba(255, 255, 255, 0.75);backdrop-filter:blur(10px)}
+  .sol-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-top:56px}
+  .sol-card{background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--glass-border);border-radius:10px;padding:32px;
+    transition:.3s;position:relative;overflow:hidden;cursor:default}
+  .sol-card:hover{border-color:rgba(255,107,61,.40);transform:translateY(-6px);box-shadow:0 16px 48px rgba(255,107,61,.18)}
+  .sol-card::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;
+    background:linear-gradient(90deg,var(--org),var(--blue));transform:scaleX(0);transform-origin:left;transition:.35s}
+  .sol-card:hover::after{transform:scaleX(1)}
+  .sol-icon{font-size:2rem;margin-bottom:20px;display:block}
+  .sol-name{font-family:'Rajdhani',sans-serif;font-size:1.35rem;font-weight:700;margin-bottom:10px;color:var(--text)}
+  .sol-desc{font-size:.85rem;color:var(--text-dim);line-height:1.7}
+
+  /* SERVICES */
+  .svc-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:56px}
+  .svc-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:12px;padding:40px 32px;text-align:center;transition:.3s}
+  .svc-card:hover{transform:translateY(-8px);box-shadow:0 20px 60px rgba(255,107,61,.15);border-color:rgba(255,107,61,.35)}
+  .svc-num{font-family:'Rajdhani',sans-serif;font-size:3.5rem;font-weight:700;
+    background:linear-gradient(135deg,var(--org-l),var(--org-d));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+  .svc-name{font-family:'Rajdhani',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:12px;color:var(--text)}
+  .svc-desc{font-size:.85rem;color:var(--text-dim);line-height:1.7}
+
+  /* VISION BAND */
+  #vision-band{background:linear-gradient(135deg,rgba(255,107,61,.08),rgba(255,138,101,.06));
+    border-top:1px solid rgba(255,107,61,.20);border-bottom:1px solid rgba(255,107,61,.20);padding:80px 6%;text-align:center}
+  .vision-quote{font-family:'Rajdhani',sans-serif;font-size:clamp(1.6rem,3vw,2.6rem);font-weight:700;max-width:900px;margin:0 auto;line-height:1.3;color:var(--text)}
+  .vision-quote em{font-style:normal;color:var(--org)}
+
+  /* WHY CARDS */
+  #why{background:rgba(255, 255, 255, 0.75);backdrop-filter:blur(10px)}
+  .why-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:48px}
+  .why-tag{background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:24px 20px;text-align:center;
+    transition:.3s;font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:600;letter-spacing:.5px;color:var(--text)}
+  .why-tag:hover{border-color:rgba(255,107,61,.50);background:rgba(255,107,61,.08);transform:scale(1.04)}
+  .why-tag span{display:block;font-size:1.6rem;margin-bottom:8px}
+
+  /* CONTACT */
+  #contact{text-align:center}
+  .contact-inner{max-width:680px;margin:0 auto}
+  .contact-inner p{color:var(--text-dim);font-size:1rem;line-height:1.8;margin-bottom:40px}
+  .contact-btns{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:56px}
+  .contact-strip{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;margin-top:48px;padding-top:48px;border-top:1px solid rgba(255,107,61,.12)}
+  .cstrip-item{text-align:center}
+  .cstrip-icon{font-size:1.8rem;margin-bottom:8px;display:block}
+  .cstrip-val{font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text)}
+  .cstrip-lbl{font-size:.75rem;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px}
+
+  /* FOOTER */
+  footer{background:rgba(255, 255, 255, 0.82);backdrop-filter:blur(10px);border-top:1px solid rgba(255,107,61,0.12);padding:40px 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .footer-logo-img{height:34px;width:auto;display:block;transition:.3s}
+  .footer-logo-img:hover{transform:scale(1.03)}
+  .footer-right{font-size:.78rem;color:var(--text-dim)}
+
+  /* SCAN LINE */
+  .scan-line{position:absolute;left:0;width:100%;height:2px;
+    background:linear-gradient(90deg,transparent,var(--org),transparent);
+    animation:scan 4s ease-in-out infinite;opacity:.4;pointer-events:none}
+  @keyframes scan{0%,100%{top:10%}50%{top:90%}}
+
+  /* REVEAL (handled by GSAP) */
+  .reveal{opacity:1}
+
+  @media(max-width:900px){
+    #hub-canvas{display:none}
+    .svc-row{grid-template-columns:1fr}
+    .nav-links{display:none}
+    footer{flex-direction:column;text-align:center}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="barcode-bg-canvas"></canvas>
+
+<nav>
+  <a href="#hero" class="logo"><img src="logo.png" alt="Postechno Solutions" class="logo-img"></a>
+  <ul class="nav-links">
+    <li><a href="#solutions">Solutions</a></li>
+    <li><a href="#products">Products</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="nav-cta">Get a Quote</button>
+</nav>
+
+<section id="hero">
+  <canvas id="canvas3d"></canvas>
+  <div class="hero-overlay"></div>
+  <canvas id="hub-canvas"></canvas>
+  <div class="hero-content reveal">
+    <div class="hero-eyebrow">Odisha's #1 Auto-ID Automation Partner</div>
+    <h1>Barcode &amp; RFID<br>Automation for<br><em>High-Stakes Industry</em></h1>
+    <p class="hero-sub">End-to-end hardware and software ecosystems for government, logistics, manufacturing, and healthcare. Eliminate errors. Maximize productivity.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="document.getElementById('solutions').scrollIntoView({behavior:'smooth'})">Explore Solutions</button>
+      <button class="btn-outline" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact Us</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-val">500<span>+</span></div><div class="stat-lbl">Clients Served</div></div>
+      <div><div class="stat-val">15<span>+</span></div><div class="stat-lbl">Years in Odisha</div></div>
+      <div><div class="stat-val">24<span>/7</span></div><div class="stat-lbl">Tech Support</div></div>
+    </div>
+  </div>
+  <!-- Scan line is now handled globally by the background barcode canvas -->
+</section>
+
+<div id="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
+
+<section id="products">
+  <div class="reveal">
+    <div class="section-label">Our Products</div>
+    <div class="section-title">Industry-Grade Hardware Ecosystem</div>
+    <p class="section-sub">Genuine brands, professionally installed, backed by elite technical support. Hover to discover the brands behind each category.</p>
+  </div>
+  <div class="flip-grid reveal">
+
+    <div class="flip-card"><div class="flip-inner">
+      <div class="flip-face front">
+        <div><div class="card-icon">🖥️</div><div class="card-cat">Terminal Systems</div><div class="card-title">POS Solutions</div></div>
+        <div class="card-hint">Hover to see brands →</div>
+      </div>
+      <div class="flip-face back">
+        <div class="back-title">POS Brands</div>
+        <p class="back-desc">Rugged, reliable point-of-sale terminals for retail, hospitality, and enterprise environments.</p>
+        <div class="brand-tags"><span class="brand-tag">Essae</span><span class="brand-tag">Retsol</span><span class="brand-tag">Positude</span><span class="brand-tag">Posiflex</span></div>
+      </div>
+    </div></div>
+
+    <div class="flip-card"><div class="flip-inner">
+      <div class="flip-face front">
+        <div><div class="card-icon">📦</div><div class="card-cat">Label Printing</div><div class="card-title">Barcode Printers</div></div>
+        <div class="card-hint">Hover to see brands →</div>
+      </div>
+      <div class="flip-face back">
+        <div class="back-title">Barcode Brands</div>
+        <p class="back-desc">High-speed, high-resolution label printers for warehousing, manufacturing, and shipping operations.</p>
+        <div class="brand-tags"><span class="brand-tag">TVSe</span><span class="brand-tag">TSC</span><span class="brand-tag">Zebra</span><span class="brand-tag">Citizen</span></div>
+      </div>
+    </div></div>
+
+    <div class="flip-card"><div class="flip-inner">
+      <div class="flip-face front">
+        <div><div class="card-icon">📡</div><div class="card-cat">Wireless Auto-ID</div><div class="card-title">RFID Systems</div></div>
+        <div class="card-hint">Hover to see brands →</div>
+      </div>
+      <div class="flip-face back">
+        <div class="back-title">RFID Brands</div>
+        <p class="back-desc">Real-time asset tracking, inventory management, and access control via RFID technology.</p>
+        <div class="brand-tags"><span class="brand-tag">TSC</span><span class="brand-tag">Zebra</span></div>
+      </div>
+    </div></div>
+
+    <div class="flip-card"><div class="flip-inner">
+      <div class="flip-face front">
+        <div><div class="card-icon">🔍</div><div class="card-cat">Data Capture</div><div class="card-title">Barcode Scanners</div></div>
+        <div class="card-hint">Hover to see brands →</div>
+      </div>
+      <div class="flip-face back">
+        <div class="back-title">Scanner Brands</div>
+        <p class="back-desc">1D/2D handheld and fixed-mount scanners for fast, accurate data capture in any environment.</p>
+        <div class="brand-tags"><span class="brand-tag">Retsol</span><span class="brand-tag">TVSe</span><span class="brand-tag">Zebra</span><span class="brand-tag">Newland</span><span class="brand-tag">Rugtek</span></div>
+      </div>
+    </div></div>
+
+    <div class="flip-card"><div class="flip-inner">
+      <div class="flip-face front">
+        <div><div class="card-icon">🖨️</div><div class="card-cat">Receipt & Label</div><div class="card-title">Thermal Printers</div></div>
+        <div class="card-hint">Hover to see brands →</div>
+      </div>
+      <div class="flip-face back">
+        <div class="back-title">Thermal Brands</div>
+        <p class="back-desc">Fast thermal receipt and label printers for POS, healthcare, logistics, and production lines.</p>
+        <div class="brand-tags"><span class="brand-tag">Retsol</span><span class="brand-tag">Essae</span><span class="brand-tag">Epson</span><span class="brand-tag">TVSe</span><span class="brand-tag">Rugtek</span></div>
+      </div>
+    </div></div>
+
+    <div class="flip-card"><div class="flip-inner">
+      <div class="flip-face front">
+        <div><div class="card-icon">🏷️</div><div class="card-cat">Print Media</div><div class="card-title">Consumables</div></div>
+        <div class="card-hint">Hover to see types →</div>
+      </div>
+      <div class="flip-face back">
+        <div class="back-title">Label & Ribbon Types</div>
+        <p class="back-desc">Premium labels and ribbons for every substrate — food, pharma, garment, logistics, and industrial use.</p>
+        <div class="brand-tags"><span class="brand-tag">Chrome</span><span class="brand-tag">Polyester</span><span class="brand-tag">Taffeta</span><span class="brand-tag">Direct Thermal</span><span class="brand-tag">Matte</span><span class="brand-tag">Wax Ribbon</span><span class="brand-tag">Resin</span></div>
+      </div>
+    </div></div>
+
+  </div>
+</section>
+
+<section id="solutions">
+  <div class="reveal">
+    <div class="section-label">Tailored Ecosystems</div>
+    <div class="section-title">Solutions by Industry Vertical</div>
+    <p class="section-sub">We don't sell boxes — we deploy complete, end-to-end automation ecosystems matched to your operational needs.</p>
+  </div>
+  <div class="sol-grid reveal">
+    <div class="sol-card"><span class="sol-icon">📊</span><div class="sol-name">Barcode Solutions</div><p class="sol-desc">Complete barcode infrastructure from printing to scanning — integrated into your existing workflows without disruption.</p></div>
+    <div class="sol-card"><span class="sol-icon">📡</span><div class="sol-name">RFID Solutions</div><p class="sol-desc">Real-time asset visibility, automated inventory, and supply chain transparency using passive and active RFID technology.</p></div>
+    <div class="sol-card"><span class="sol-icon">🛒</span><div class="sol-name">Retail Solutions</div><p class="sol-desc">POS systems, inventory automation, and customer data capture for modern retail stores and supermarkets.</p></div>
+    <div class="sol-card"><span class="sol-icon">🍽️</span><div class="sol-name">Hospitality Solutions</div><p class="sol-desc">Streamlined ordering, billing, and kitchen management for restaurants, hotels, and food service chains.</p></div>
+    <div class="sol-card"><span class="sol-icon">🏭</span><div class="sol-name">Industrial Solutions</div><p class="sol-desc">Production line tracking, WIP monitoring, and dispatch automation for factories and manufacturing plants.</p></div>
+    <div class="sol-card"><span class="sol-icon">🪪</span><div class="sol-name">Visitor Management</div><p class="sol-desc">Smart visitor registration, badge printing, and access control for government buildings, campuses, and enterprises.</p></div>
+  </div>
+</section>
+
+<div id="vision-band" class="reveal">
+  <div class="vision-quote">
+    "To become Odisha's most trusted technology solutions provider — delivering <em>innovative, reliable automation</em> that simplifies operations and drives real business growth."
+  </div>
+</div>
+
+<section id="services">
+  <div class="reveal">
+    <div class="section-label">After-Sale Excellence</div>
+    <div class="section-title">Services That Keep You Running</div>
+    <p class="section-sub">Our commitment doesn't end at delivery. Professional installation, training, and industry-leading post-sale support.</p>
+  </div>
+  <div class="svc-row reveal">
+    <div class="svc-card"><div class="svc-num">01</div><div class="svc-name">Repair Service</div><p class="svc-desc">Fast turnaround hardware repair for all brands we carry. Skilled technicians, genuine parts, minimal downtime guaranteed.</p></div>
+    <div class="svc-card"><div class="svc-num">02</div><div class="svc-name">Advanced Wireless Service</div><p class="svc-desc">Wireless infrastructure assessment, installation, and optimization for mobile barcode and RFID deployments.</p></div>
+    <div class="svc-card"><div class="svc-num">03</div><div class="svc-name">AMC & Annual Support</div><p class="svc-desc">Comprehensive Annual Maintenance Contracts with defined SLAs, scheduled preventive maintenance, and priority response.</p></div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="reveal" style="text-align:center;max-width:800px;margin:0 auto 56px">
+    <div class="section-label">Why Postechno</div>
+    <div class="section-title">The Postechno Difference</div>
+    <p class="section-sub" style="margin:0 auto">Five pillars that make us Odisha's trusted automation partner across government, logistics, and enterprise.</p>
+  </div>
+  <div class="why-grid reveal">
+    <div class="why-tag"><span>✅</span>Quality Products &amp; Genuine Brands</div>
+    <div class="why-tag"><span>⚙️</span>Professional Installation &amp; Training</div>
+    <div class="why-tag"><span>⚡</span>Fast Technical Support</div>
+    <div class="why-tag"><span>🔧</span>Customized Business Solutions</div>
+    <div class="why-tag"><span>📱</span>Mobility Sales &amp; Service</div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="contact-inner reveal">
+    <div class="section-label">Get In Touch</div>
+    <div class="section-title">Ready to Automate Your Operations?</div>
+    <p>Tell us your industry and operational challenges. Our team will design a custom Auto-ID solution — hardware, software, and ongoing support — built specifically for your environment.</p>
+    <div class="contact-btns">
+      <button class="btn-primary">Request a Free Consultation</button>
+      <button class="btn-outline">Download Product Catalog</button>
+    </div>
+    <div class="contact-strip">
+      <div class="cstrip-item"><span class="cstrip-icon">📍</span><div class="cstrip-val">Bhubaneswar, Odisha</div><div class="cstrip-lbl">Headquarters</div></div>
+      <div class="cstrip-item"><span class="cstrip-icon">📞</span><div class="cstrip-val">+91 XXXXX XXXXX</div><div class="cstrip-lbl">Call Us</div></div>
+      <div class="cstrip-item"><span class="cstrip-icon">✉️</span><div class="cstrip-val">info@postechno.in</div><div class="cstrip-lbl">Email</div></div>
+      <div class="cstrip-item"><span class="cstrip-icon">🕐</span><div class="cstrip-val">24 / 7 Support</div><div class="cstrip-lbl">Always Available</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <a href="#hero"><img src="logo.png" alt="Postechno Solutions" class="footer-logo-img"></a>
+  <div class="footer-right">© 2025 Postechno Solutions Pvt. Ltd. · Bhubaneswar, Odisha · All rights reserved</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+// 1. BACKGROUND CANVAS
+(function(){
+  const canvas = document.getElementById('canvas3d');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+  camera.position.set(0,0,30);
+
+  // Nodes — orange palette only
+  const nodeGeo = new THREE.SphereGeometry(0.12,8,8);
+  const nodes = [];
+  const oranges = [0xff6b3d, 0xff8a65, 0x1a6ae8, 0xffaa80, 0x1a6ae8];
+  for(let i=0;i<80;i++){
+    const mat = new THREE.MeshBasicMaterial({color: oranges[Math.floor(Math.random()*oranges.length)]});
+    const m = new THREE.Mesh(nodeGeo, mat);
+    m.position.set((Math.random()-.5)*80,(Math.random()-.5)*50,(Math.random()-.5)*40);
+    scene.add(m);
+    nodes.push({mesh:m, speed:(Math.random()-.5)*0.004, phase:Math.random()*Math.PI*2});
+  }
+
+  // Lines
+  const lineMat = new THREE.LineBasicMaterial({color:0xff6b3d, transparent:true, opacity:0.15});
+  for(let i=0;i<40;i++){
+    const a = nodes[Math.floor(Math.random()*nodes.length)];
+    const b = nodes[Math.floor(Math.random()*nodes.length)];
+    const geo = new THREE.BufferGeometry().setFromPoints([a.mesh.position, b.mesh.position]);
+    scene.add(new THREE.Line(geo, lineMat));
+  }
+
+  // Shapes
+  const shapes = [];
+  for(let i=0;i<12;i++){
+    const g = Math.random()>.5 ? new THREE.OctahedronGeometry(.8) : new THREE.TetrahedronGeometry(1);
+    const col = oranges[Math.floor(Math.random()*oranges.length)];
+    const mat = new THREE.MeshBasicMaterial({color:col, wireframe:true, transparent:true, opacity:.30});
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.position.set((Math.random()-.5)*70,(Math.random()-.5)*40,(Math.random()-.5)*20);
+    scene.add(mesh);
+    shapes.push(mesh);
+  }
+
+  let mouse = {x:0, y:0};
+  document.addEventListener('mousemove', e=>{
+    mouse.x = (e.clientX/window.innerWidth-.5)*2;
+    mouse.y = -(e.clientY/window.innerHeight-.5)*2;
+  });
+
+  const clock = new THREE.Clock();
+  function animate(){
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    nodes.forEach(n=>{ n.mesh.position.y += Math.sin(t*n.speed*60+n.phase)*0.002; });
+    shapes.forEach((s,i)=>{ s.rotation.x=t*.3+i; s.rotation.y=t*.2+i; });
+    camera.position.x += (mouse.x*3-camera.position.x)*.03;
+    camera.position.y += (mouse.y*2-camera.position.y)*.03;
+    camera.lookAt(0,0,0);
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  window.addEventListener('resize',()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
+})();
+
+// 2. HUB CANVAS
+(function(){
+  const canvas = document.getElementById('hub-canvas');
+  if(!canvas) return;
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(500,500);
+  renderer.setClearColor(0x1a0e08, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50,1,0.1,100);
+  camera.position.set(0,0,8);
+
+  const ring1 = new THREE.Mesh(new THREE.TorusGeometry(2,.06,12,80), new THREE.MeshBasicMaterial({color:0xff6b3d}));
+  scene.add(ring1);
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.3,.04,12,80), new THREE.MeshBasicMaterial({color:0x1a6ae8}));
+  scene.add(ring2);
+  const ring3 = new THREE.Mesh(new THREE.TorusGeometry(2.5,.03,12,80), new THREE.MeshBasicMaterial({color:0xe55527, transparent:true, opacity:.5}));
+  scene.add(ring3);
+
+  const box = new THREE.Mesh(new THREE.BoxGeometry(.8,.8,.8), new THREE.MeshBasicMaterial({color:0xe55527}));
+  scene.add(box);
+  const boxWire = new THREE.Mesh(new THREE.BoxGeometry(.82,.82,.82), new THREE.MeshBasicMaterial({color:0xffaa80, wireframe:true}));
+  scene.add(boxWire);
+
+  const orbitNodes = [];
+  for(let i=0;i<8;i++){
+    const col = i%2===0 ? 0xff6b3d : 0x1a6ae8;
+    const m = new THREE.Mesh(new THREE.SphereGeometry(.12,8,8), new THREE.MeshBasicMaterial({color:col}));
+    m.userData.angle = (i/8)*Math.PI*2;
+    scene.add(m);
+    orbitNodes.push(m);
+  }
+
+  const beamMat = new THREE.MeshBasicMaterial({color:0xff6b3d, transparent:true, opacity:.7, side:THREE.DoubleSide});
+  const beam = new THREE.Mesh(new THREE.PlaneGeometry(4,.06), beamMat);
+  scene.add(beam);
+
+  const sphereWire = new THREE.Mesh(new THREE.SphereGeometry(2.8,10,10), new THREE.MeshBasicMaterial({color:0xff6b3d, wireframe:true, transparent:true, opacity:.08}));
+  scene.add(sphereWire);
+
+  const clock = new THREE.Clock();
+  function animate(){
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    ring1.rotation.x=t*.4; ring1.rotation.y=t*.6;
+    ring2.rotation.x=-t*.5; ring2.rotation.z=t*.3;
+    ring3.rotation.y=t*.25; ring3.rotation.z=t*.15;
+    box.rotation.y=t*.5; box.rotation.x=t*.3;
+    boxWire.rotation.y=t*.5; boxWire.rotation.x=t*.3;
+    sphereWire.rotation.y=t*.15;
+    beam.rotation.z=t*1.5;
+    beamMat.opacity=.4+.3*Math.sin(t*3);
+    orbitNodes.forEach(n=>{
+      const a=n.userData.angle+t*.7;
+      n.position.set(Math.cos(a)*2, Math.sin(a)*2, 0);
+    });
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+
+// 3. TICKER
+const tickItems = ['Quality Products & Genuine Brands','Professional Installation','Fast Technical Support','Customized Business Solutions','Mobility Sales & Service','Barcode & RFID Specialists',"Odisha's Leading Auto-ID Partner",'Government \u00b7 Logistics \u00b7 Healthcare'];
+const track = document.getElementById('tickerTrack');
+[...tickItems,...tickItems].forEach(txt=>{
+  const el=document.createElement('span');
+  el.className='ticker-item';
+  el.textContent=txt;
+  track.appendChild(el);
+});
+
+// 4. BARCODE BACKGROUND CANVAS ANIMATION
+(function() {
+  const canvas = document.getElementById('barcode-bg-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+  
+  let barcodePattern = [];
+  let patternTotalWidth = 0;
+  let scrollOffset = 0;
+  const scrollSpeed = 0.4; // Horizontal scroll speed
+  
+  let scanY = 0;
+  let scanDirection = 1; // 1 = down, -1 = up
+  const scanSpeed = 2.0; // Slow, smooth vertical sweep
+  
+  function generateBarcodePattern() {
+    barcodePattern = [];
+    patternTotalWidth = 0;
+    // Generate enough lines to tile the screen + extra padding for smooth scrolling
+    while (patternTotalWidth < width + 400) {
+      const lw = [2, 4, 8, 12, 16, 24, 32][Math.floor(Math.random() * 7)];
+      const sp = [4, 8, 12, 16, 24, 32, 48, 64][Math.floor(Math.random() * 8)];
+      barcodePattern.push({ width: lw, gap: sp });
+      patternTotalWidth += lw + sp;
+    }
+  }
+  
+  generateBarcodePattern();
+  
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    generateBarcodePattern();
+  });
+  
+  function drawUI() {
+    ctx.font = '10px "Rajdhani", "Courier New", monospace';
+    ctx.fillStyle = 'rgba(255, 107, 61, 0.22)';
+    
+    // Corner marks (reticles)
+    const margin = 20;
+    const len = 12;
+    
+    // Top Left
+    ctx.beginPath();
+    ctx.moveTo(margin, margin + len); ctx.lineTo(margin, margin); ctx.lineTo(margin + len, margin);
+    ctx.stroke();
+    
+    // Top Right
+    ctx.beginPath();
+    ctx.moveTo(width - margin, margin + len); ctx.lineTo(width - margin, margin); ctx.lineTo(width - margin - len, margin);
+    ctx.stroke();
+    
+    // Bottom Left
+    ctx.beginPath();
+    ctx.moveTo(margin, height - margin - len); ctx.lineTo(margin, height - margin); ctx.lineTo(margin + len, height - margin);
+    ctx.stroke();
+    
+    // Bottom Right
+    ctx.beginPath();
+    ctx.moveTo(width - margin, height - margin - len); ctx.lineTo(width - margin, height - margin); ctx.lineTo(width - margin - len, height - margin);
+    ctx.stroke();
+    
+    // Tech text details
+    ctx.fillText('SYS_SCAN_ACTIVE: TRUE', margin + 10, margin + 25);
+    ctx.fillText('SCANNER_POS_Y: ' + Math.round(scanY) + 'px', margin + 10, margin + 40);
+    ctx.fillText('FREQ: 5.8 GHz', margin + 10, margin + 55);
+    
+    ctx.textAlign = 'right';
+    ctx.fillText('POSTECHNO AUTO-ID SECURITY v3.0', width - margin - 10, margin + 25);
+    ctx.fillText('DEVICES_CONNECTED: 8', width - margin - 10, margin + 40);
+    
+    // Floating laser height line indicator text
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255, 107, 61, 0.6)';
+    ctx.fillText('[ SCAN BEAM ACTIVE ]', 10, scanY - 8);
+    
+    ctx.textAlign = 'right';
+    const percent = Math.round((scanY / height) * 100);
+    ctx.fillText(percent + '% BUFFER', width - 10, scanY - 8);
+  }
+  
+  function animate() {
+    requestAnimationFrame(animate);
+    
+    // 1. Clear background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    
+    // 2. Draw subtle grid
+    ctx.strokeStyle = 'rgba(255, 107, 61, 0.008)';
+    ctx.lineWidth = 1;
+    const gridSpacing = 80;
+    for (let x = 0; x < width; x += gridSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < height; y += gridSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    
+    // Update scanner positions
+    scanY += scanSpeed * scanDirection;
+    if (scanY >= height) {
+      scanY = height;
+      scanDirection = -1;
+    } else if (scanY <= 0) {
+      scanY = 0;
+      scanDirection = 1;
+    }
+    
+    scrollOffset += scrollSpeed;
+    
+    // Subtle energy flicker over time
+    const t = Date.now() * 0.003;
+    const flicker = 0.90 + 0.10 * Math.sin(t * 1.5);
+    
+    // 3. Draw vertical barcode lines with seamless horizontal scrolling
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    const glowRadius = 180; // px
+    
+    const startGlow = Math.max(0, (scanY - glowRadius) / height);
+    const peakGlow = scanY / height;
+    const endGlow = Math.min(1, (scanY + glowRadius) / height);
+    
+    const baseAlpha = 0.025 * flicker;
+    const peakAlpha = 0.28 * flicker;
+    const midAlpha = 0.05 * flicker;
+    
+    grad.addColorStop(0, `rgba(255, 107, 61, ${baseAlpha})`);
+    grad.addColorStop(startGlow, `rgba(255, 107, 61, ${baseAlpha})`);
+    grad.addColorStop(peakGlow - 0.005 > 0 ? peakGlow - 0.005 : 0, `rgba(255, 107, 61, ${midAlpha})`);
+    grad.addColorStop(peakGlow, `rgba(255, 107, 61, ${peakAlpha})`); // peak barcode brightness
+    grad.addColorStop(peakGlow + 0.005 < 1 ? peakGlow + 0.005 : 1, `rgba(255, 107, 61, ${midAlpha})`);
+    grad.addColorStop(endGlow, `rgba(255, 107, 61, ${baseAlpha})`);
+    grad.addColorStop(1, `rgba(255, 107, 61, ${baseAlpha})`);
+    
+    ctx.strokeStyle = grad;
+    
+    // Draw pattern tiling across width
+    let curX = -patternTotalWidth + (scrollOffset % patternTotalWidth);
+    while (curX < width + 100) {
+      for (let i = 0; i < barcodePattern.length; i++) {
+        const item = barcodePattern[i];
+        if (curX + item.width > 20 && curX < width - 20) {
+          ctx.beginPath();
+          ctx.lineWidth = item.width;
+          ctx.moveTo(curX + item.width / 2, 0);
+          ctx.lineTo(curX + item.width / 2, height);
+          ctx.stroke();
+        }
+        curX += item.width + item.gap;
+      }
+    }
+    
+    // 4. Draw horizontal scanning beam (laser line)
+    // Draw outer soft glow
+    const laserGlow = ctx.createLinearGradient(0, scanY - 30, 0, scanY + 30);
+    laserGlow.addColorStop(0, 'rgba(255, 107, 61, 0)');
+    laserGlow.addColorStop(0.5, `rgba(255, 107, 61, ${0.14 * flicker})`);
+    laserGlow.addColorStop(1, 'rgba(255, 107, 61, 0)');
+    ctx.fillStyle = laserGlow;
+    ctx.fillRect(0, scanY - 30, width, 60);
+    
+    // Draw the bright laser core
+    ctx.strokeStyle = '#ff6b3d';
+    ctx.lineWidth = 2.5;
+    
+    // Setup glow shadow
+    ctx.shadowColor = '#ff6b3d';
+    ctx.shadowBlur = 12 * flicker;
+    
+    ctx.beginPath();
+    ctx.moveTo(0, scanY);
+    ctx.lineTo(width, scanY);
+    ctx.stroke();
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
+    
+    // 5. Draw UI elements
+    ctx.strokeStyle = 'rgba(255, 107, 61, 0.18)';
+    ctx.lineWidth = 1;
+    drawUI();
+  }
+  
+  animate();
+})();
+
+// 5. CARD TILT
+document.querySelectorAll('.flip-card').forEach(card=>{
+  const inner=card.querySelector('.flip-inner');
+  card.addEventListener('mousemove',e=>{
+    if(inner.style.transform && inner.style.transform.includes('180')) return;
+    const r=card.getBoundingClientRect();
+    const rx=((e.clientY-(r.top+r.height/2))/r.height)*14;
+    const ry=-((e.clientX-(r.left+r.width/2))/r.width)*14;
+    inner.style.transform=`perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+  });
+  card.addEventListener('mouseleave',()=>{
+    inner.style.transition='transform .5s ease';
+    inner.style.transform='';
+    setTimeout(()=>inner.style.transition='',500);
+  });
+});
+
+// 6. GSAP PREMIUM SCROLLTRIGGER ANIMATIONS
+gsap.registerPlugin(ScrollTrigger);
+
+// Initialize all reveals to hidden first
+gsap.set('.reveal', { opacity: 0, y: 40 });
+
+// Hero Reveal
+gsap.set('.hero-content', { opacity: 1, y: 0 }); // Hero container visible
+gsap.from('.hero-content > *', {
+  opacity: 0,
+  y: 40,
+  duration: 1.0,
+  stagger: 0.15,
+  ease: 'power3.out',
+  delay: 0.2
+});
+
+// Products Title Stagger
+gsap.to('#products .reveal:not(.flip-grid)', {
+  scrollTrigger: {
+    trigger: '#products',
+    start: 'top 80%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  stagger: 0.15,
+  ease: 'power2.out'
+});
+
+// Products Cards Stagger
+gsap.to('#products .flip-grid', {
+  scrollTrigger: {
+    trigger: '#products .flip-grid',
+    start: 'top 85%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  ease: 'power2.out'
+});
+gsap.from('#products .flip-card', {
+  scrollTrigger: {
+    trigger: '#products .flip-grid',
+    start: 'top 85%',
+  },
+  opacity: 0,
+  scale: 0.9,
+  y: 40,
+  duration: 0.8,
+  stagger: 0.08,
+  ease: 'back.out(1.2)'
+});
+
+// Solutions Title Stagger
+gsap.to('#solutions .reveal:not(.sol-grid)', {
+  scrollTrigger: {
+    trigger: '#solutions',
+    start: 'top 80%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  stagger: 0.15,
+  ease: 'power2.out'
+});
+
+// Solutions Cards Stagger
+gsap.to('#solutions .sol-grid', {
+  scrollTrigger: {
+    trigger: '#solutions .sol-grid',
+    start: 'top 85%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  ease: 'power2.out'
+});
+gsap.from('#solutions .sol-card', {
+  scrollTrigger: {
+    trigger: '#solutions .sol-grid',
+    start: 'top 85%',
+  },
+  opacity: 0,
+  y: 35,
+  duration: 0.7,
+  stagger: 0.06,
+  ease: 'power2.out'
+});
+
+// Vision Quote Reveal
+gsap.to('#vision-band', {
+  scrollTrigger: {
+    trigger: '#vision-band',
+    start: 'top 85%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.9,
+  ease: 'power2.out'
+});
+
+// Services Title Stagger
+gsap.to('#services .reveal:not(.svc-row)', {
+  scrollTrigger: {
+    trigger: '#services',
+    start: 'top 80%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  stagger: 0.15,
+  ease: 'power2.out'
+});
+
+// Services Cards Stagger
+gsap.to('#services .svc-row', {
+  scrollTrigger: {
+    trigger: '#services .svc-row',
+    start: 'top 85%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  ease: 'power2.out'
+});
+gsap.from('#services .svc-card', {
+  scrollTrigger: {
+    trigger: '#services .svc-row',
+    start: 'top 85%',
+  },
+  opacity: 0,
+  y: 40,
+  duration: 0.8,
+  stagger: 0.12,
+  ease: 'power3.out'
+});
+
+// Why Section Reveal
+gsap.to('#why .reveal:not(.why-grid)', {
+  scrollTrigger: {
+    trigger: '#why',
+    start: 'top 80%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  stagger: 0.15,
+  ease: 'power2.out'
+});
+
+// Why Tags Stagger
+gsap.to('#why .why-grid', {
+  scrollTrigger: {
+    trigger: '#why .why-grid',
+    start: 'top 85%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  ease: 'power2.out'
+});
+gsap.from('#why .why-tag', {
+  scrollTrigger: {
+    trigger: '#why .why-grid',
+    start: 'top 85%',
+  },
+  opacity: 0,
+  scale: 0.85,
+  y: 25,
+  duration: 0.6,
+  stagger: 0.06,
+  ease: 'back.out(1.4)'
+});
+
+// Contact Reveal
+gsap.to('#contact .contact-inner', {
+  scrollTrigger: {
+    trigger: '#contact',
+    start: 'top 80%',
+  },
+  opacity: 1,
+  y: 0,
+  duration: 0.8,
+  ease: 'power2.out'
+});
+</script>
+</body>
+</html>
